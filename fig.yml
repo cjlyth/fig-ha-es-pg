@@ -1,0 +1,67 @@
+# Entrypoint for the deployment
+gateway:
+  image: dockerfile/haproxy
+  links:
+    - webapp
+    - postgres
+    - elastic
+  domainname: publicrelay.dev    
+  hostname: www
+  ports:
+    - "80:80"
+  expose:
+    - "80"
+  volumes_from:
+    - data
+
+##########################
+# Application
+webapp:
+  image: nginx
+  ports:
+    - "8080:80"
+  volumes_from:
+    - data
+##########################
+# Postgres
+postgres:
+  image: postgres
+  ports:
+    - "5432:5432"
+  volumes_from:
+    - data
+##########################
+# Elasticsearch
+elastic:
+  image: dockerfile/elasticsearch
+  ports:
+    - "9200:9200"
+    - "9300:9300"
+  volumes_from:
+    - data
+
+##########################
+# Configs etc
+data:
+  image: busybox
+  working_dir: /data
+  volumes:
+    - /haproxy-override
+    - /usr/share/nginx/html
+    - /docker-entrypoint-initdb.d
+    - /data
+
+##########################
+# echo "test" | sudo docker run -i -a stdin ubuntu cat -
+# fig run --entrypoint /usr/bin/env --rm  shell bash
+shell:
+  image: dockerfile/ubuntu
+  hostname: ssh
+  domainname: publicrelay.dev
+  links:
+    - gateway
+    - webapp
+    - postgres
+    - elastic
+  volumes_from:
+    - data
